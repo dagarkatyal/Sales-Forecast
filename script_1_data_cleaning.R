@@ -1,6 +1,20 @@
-setwd("~/Personal/R-Work/Demand Prediction")
+setwd("~/Personal/R-Work/Sales Forecast")
 
 library(data.table)
+library(DataCombine)
+
+
+##########################################################################
+#this function takes a vector and  convert it into numeric vector 
+#by trimming white spaces and removing COmma
+##########################################################################
+remove_comma <- function(x = NULL){
+  x <- trimws(x)
+  out <-  as.numeric(gsub(pattern = ",",replacement = "",x = x))
+  out
+}
+
+
 
 #Cleaning the Y data 
 y_data <- fread(input = "y_data.csv")
@@ -17,7 +31,14 @@ y_col_names$index <- as.character(y_col_names$y_col_names)
 y_col_names$index[2] <- "y"
 names(y_col_names)[1] <- "variable"
 names(y_data)[2] <- "y"
-write.csv(x = y_data,file = "y_data_cleaned.csv",row.names = FALSE)
+
+#convert data to numeric
+y_data <- as.data.frame(y_data)
+class(y_data)
+for(i in 2:ncol(y_data)){
+  y_data[,i] <- remove_comma(y_data[,i])
+}
+write.csv(x = y_data,file = "y_data_cleaned.csv",row.names = FALSE,na="")
 
 
 #Cleaning the X data 
@@ -43,19 +64,27 @@ x_data$Month[1:60] <-as.Date(paste("01-",x_data$Month[1:60],sep = "" ),format = 
 x_data$Month[61:nrow(x_data)] <- as.Date(paste(x_data$Month[61:nrow(x_data)],"-01",sep = "" ),format = "%y-%b-%d")
 class(x_data$Month) <- "Date"
 #write the cleaned file for x_vector
-write.csv(x = x_data,file = "x_data_cleaned.csv",row.names = FALSE)
+x_data <- as.data.frame(x_data)
+#convert data to numeric
+for(i in 2:ncol(x_data)){
+  x_data[,i] <- remove_comma(x_data[,i])
+}
+write.csv(x = x_data,file = "x_data_cleaned.csv",row.names = FALSE,na="")
 
 
 
+
+
+##
+#now the x and y files have been cleaned we can mearge them and save them as xy_cleaned
 #merge the files
 #load the files
 y_data_cleaned <- fread(input = "y_data_cleaned.csv")
 x_data_cleaned <- fread(input = "x_data_cleaned.csv")
 
 #join the data
-xy <- merge(y_data_cleaned,x_data_cleaned,all = TRUE,by = "Month")
-summary(xy)
+xy <- merge(y_data_cleaned,x_data_cleaned,all.x = TRUE,by = "Month")
 xy <- as.data.frame(xy)
-xy <- xy[2:nrow(xy),]
-xy <- xy[,1:ncol(xy)-1]
-write.csv(x = xy,file = "xy_cleaned.csv",row.names = FALSE)
+write.csv(x = xy,file = "xy_cleaned.csv",row.names = FALSE,na = "")
+
+rm(list=ls())
